@@ -60,7 +60,7 @@ class QuickRunTests(TestCommand):
         TestCommand.run(self, *args, **kwargs)
 
 
-install_requires = ["requests"]
+install_requires = ["requests", "pyparsing", "parsedatetime"]
 
 #if not sys.platform.startswith("java"):
 #    install_requires += [ "thrift", ]    
