@@ -1417,6 +1417,10 @@ class ES(object):
         elif isinstance(doc_types, basestring):
             doc_types = [doc_types]
 
+        if isinstance(query, basestring):
+            from .nlquery.query import compile_query
+            query = compile_query(query)
+
         if hasattr(query, 'to_search_json'):
             # Common case - a Search or Query object.
             query.encoder = self.encoder
