@@ -35,9 +35,14 @@ class TestSearch(ElasticSearchTestCase):
         self.conn.index({'name':'gillian'}, 'test-index', 'test-type')
         self.conn.index({'name':'Ian'}, 'test-index', 'test-type')
         self.conn.index({'name':'Ian McCracken'}, 'test-index', 'test-type')
+        self.conn.index({'name':'not/a/result'}, 'test-index', 'test-type')
         self.conn.refresh(['test-index'])
 
         query = compile_query('name:gillian')
+        result = self.search(query)
+        self.assertEqual(result['hits']['total'], 1)
+
+        query = compile_query('name:not/a/result')
         result = self.search(query)
         self.assertEqual(result['hits']['total'], 1)
 
