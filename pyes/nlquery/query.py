@@ -40,7 +40,6 @@ def _flatten(parsed):
     return parsed
 
 
-
 def _build_query(parsed, firstrun=True):
     """
     Analyze a C{ParseResults} and determine how to querify it
@@ -60,7 +59,7 @@ def _build_query(parsed, firstrun=True):
                 if 'required' in q:
                     filt.add_must(_build_query(q[1], False))
                 elif 'prohibit' in q or 'not_' in q:
-                    filt.add_must(_build_query(q[1], False))
+                    filt.add_must_not(_build_query(q[1], False))
                 else:
                     filt.add_should(_build_query(q, False))
         else:
@@ -69,7 +68,11 @@ def _build_query(parsed, firstrun=True):
                 filters.append(_build_query(q, False))
             filt = ANDFilter(filters) if 'and_' in parsed else ORFilter(filters)
         filter_ = filt
-    elif 'not_' in parsed:
+    elif 'required' in parsed:
+        # Already taken care of by bool query
+        filter_ = _build_query(parsed[1], False)
+    elif 'prohibit' in parsed or 'not_' in parsed:
+        # Already taken care of by bool query
         filter_ = NotFilter(_build_query(parsed[1], False))
     elif 'query' in parsed:
         if WILDCARD.match(parsed.query):

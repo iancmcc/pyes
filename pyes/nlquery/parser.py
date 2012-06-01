@@ -45,10 +45,10 @@ range_search = Group((LBRACK('incl_lower') | LBRACE('excl_lower')) +
 boost = (CARAT + number("boost"))
 
 string_expr = Group(string + proximity_modifier) | string
-word_expr = Group(valid_word + fuzzy_modifier) | valid_word
+word_expr = (Group(valid_word + fuzzy_modifier) | valid_word)
 term << (Optional(field_name("field") + COLON) + 
          (word_expr("query") | string_expr("phrase") | range_search("range") | Group(LPAR + expression + RPAR)("subquery")) + Optional(boost))
-term.setParseAction(lambda t:[t] if 'field' in t or 'boost' in t else t)
+term.setParseAction(lambda t:[t] if 'field' in t or 'query' in t or 'boost' in t else t)
     
 expression << operatorPrecedence(term,
     [

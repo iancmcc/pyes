@@ -4,8 +4,6 @@ import logging
 from pprint import pprint
 from datetime import datetime, timedelta
 
-from pyelasticsearch import ElasticSearch
-
 from pyes.nlquery.query import *
 from pyes.nlquery.parser import LuceneParser
 
@@ -154,6 +152,22 @@ class TestSearch(ElasticSearchTestCase):
         self.conn.index({'name':'defghij', 'title': '5678'}, 'test-index', 'test-type', 2)
         self.conn.index({'name':'hijklmn', 'title': '1234'}, 'test-index', 'test-type', 3)
         self.conn.refresh(['test-index'])
+
+        query = compile_query('+1234')
+        result = self.search(query)
+        self.assertEqual(result['hits']['total'], 2)
+
+        query = compile_query('abcdefg defghij hijklmn')
+        result = self.search(query)
+        self.assertEqual(result['hits']['total'], 3)
+
+        query = compile_query('abcdefg defghij hijklmn -1234')
+        result = self.search(query)
+        self.assertEqual(result['hits']['total'], 1)
+
+        query = compile_query('abc* and 123*')
+        result = self.search(query)
+        self.assertEqual(result['hits']['total'], 1)
 
         query = compile_query('name:*de* and title:1234')
         result = self.search(query)

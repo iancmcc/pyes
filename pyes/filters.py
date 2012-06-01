@@ -124,7 +124,7 @@ class BoolFilter(Filter):
             filters['must_not'] = [f.serialize() for f in self._must_not]
         if self._should:
             filters['should'] = [f.serialize() for f in self._should]
-            filters['minimum_number_should_match'] = self.minimum_number_should_match
+            #filters['minimum_number_should_match'] = self.minimum_number_should_match
         if not filters:
             raise RuntimeError("A least a filter must be declared")
         return self._add_parameters({"bool": filters})
