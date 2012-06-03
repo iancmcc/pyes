@@ -3,12 +3,18 @@
 from __future__ import absolute_import
 from __future__ import with_statement
 
+cjson = json = None
 try:
-    # For Python >= 2.6
-    import json
+    # Faster implementation
+    import cjson
 except ImportError:
-    # For Python < 2.6 or people using a newer version of simplejson
-    import simplejson as json
+    try:
+        # For Python >= 2.6
+        import json
+    except ImportError:
+        # For Python < 2.6 or people using a newer version of simplejson
+        import simplejson as json
+
 
 import random
 from datetime import date, datetime
@@ -46,6 +52,7 @@ __all__ = ['ES', 'file_to_attachment', 'decode_json']
 #
 # models
 #
+
 
 class DotDict(dict):
     def __getattr__(self, attr):
@@ -205,28 +212,7 @@ class ESJsonDecoder(json.JSONDecoder):
         kwargs['object_hook'] = self.dict_to_object
         json.JSONDecoder.__init__(self, *args, **kwargs)
 
-    def string_to_datetime(self, obj):
-        """Decode a datetime string to a datetime object
-        """
-        if isinstance(obj, basestring) and len(obj) == 19:
-            try:
-                return datetime(*time.strptime("%Y-%m-%dT%H:%M:%S")[:6])
-            except:
-                pass
-        return obj
-
     def dict_to_object(self, d):
-        """
-        Decode datetime value from string to datetime
-        """
-        for k, v in d.items():
-            if isinstance(v, basestring) and len(v) == 19:
-                try:
-                    d[k] = datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
-                except ValueError:
-                    pass
-            elif isinstance(v, list):
-                d[k] = [self.string_to_datetime(elem) for elem in v]
         return DotDict(d)
 
 
@@ -1630,11 +1616,15 @@ class ES(object):
 
 def decode_json(data):
     """ Decode some json to dict"""
+    if cjson is not None:
+        return cjson.decode(data)
     return json.loads(data, cls=ES.decoder)
 
 
 def encode_json(data):
     """ Encode some json to dict"""
+    if cjson is not None:
+        return cjson.encode(data)
     return json.dumps(data, cls=ES.encoder)
 
 
