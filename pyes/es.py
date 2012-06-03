@@ -8,12 +8,14 @@ try:
     # Faster implementation
     import cjson
 except ImportError:
-    try:
-        # For Python >= 2.6
-        import json
-    except ImportError:
-        # For Python < 2.6 or people using a newer version of simplejson
-        import simplejson as json
+    pass
+
+try:
+    # For Python >= 2.6
+    import json
+except ImportError:
+    # For Python < 2.6 or people using a newer version of simplejson
+    import simplejson as json
 
 
 import random
@@ -148,10 +150,16 @@ class ElasticSearchModel(DotDict):
             cmd[op_type]['_version'] = meta.version
         if meta.id:
             cmd[op_type]['_id'] = meta.id
-        result.append(json.dumps(cmd, cls=self._meta.connection.encoder))
-        result.append("\n")
-        result.append(json.dumps(self, cls=self._meta.connection.encoder))
-        result.append("\n")
+        if cjson is not None:
+            result.append(cjson.encode(cmd))
+            result.append("\n")
+            result.append(cjson.encode(self))
+            result.append("\n")
+        else:
+            result.append(json.dumps(cmd, cls=self._meta.connection.encoder))
+            result.append("\n")
+            result.append(json.dumps(self, cls=self._meta.connection.encoder))
+            result.append("\n")
         return ''.join(result)
 
 
@@ -186,34 +194,41 @@ def _raise_exception_if_bulk_item_failed(bulk_result):
     return None
 
 
-class ESJsonEncoder(json.JSONEncoder):
-    def default(self, value):
-        """Convert rogue and mysterious data types.
-        Conversion notes:
+if json is not None:
+    class ESJsonEncoder(json.JSONEncoder):
+        def default(self, value):
+            """Convert rogue and mysterious data types.
+            Conversion notes:
 
-        - ``datetime.date`` and ``datetime.datetime`` objects are
-        converted into datetime strings.
-        """
+            - ``datetime.date`` and ``datetime.datetime`` objects are
+            converted into datetime strings.
+            """
 
-        if isinstance(value, datetime):
-            return value.isoformat()
-        elif isinstance(value, date):
-            dt = datetime(value.year, value.month, value.day, 0, 0, 0)
-            return dt.isoformat()
-        elif isinstance(value, Decimal):
-            return float(str(value))
-        else:
-            # use no special encoding and hope for the best
-            return value
+            if isinstance(value, datetime):
+                return value.isoformat()
+            elif isinstance(value, date):
+                dt = datetime(value.year, value.month, value.day, 0, 0, 0)
+                return dt.isoformat()
+            elif isinstance(value, Decimal):
+                return float(str(value))
+            else:
+                # use no special encoding and hope for the best
+                return value
+    class ESJsonDecoder(json.JSONDecoder):
+        def __init__(self, *args, **kwargs):
+            kwargs['object_hook'] = self.dict_to_object
+            json.JSONDecoder.__init__(self, *args, **kwargs)
+
+        def dict_to_object(self, d):
+            return DotDict(d)
+else:
+    class ESJsonEncoder(object):
+        pass
+
+    class ESJsonDecoder(object):
+        pass
 
 
-class ESJsonDecoder(json.JSONDecoder):
-    def __init__(self, *args, **kwargs):
-        kwargs['object_hook'] = self.dict_to_object
-        json.JSONDecoder.__init__(self, *args, **kwargs)
-
-    def dict_to_object(self, d):
-        return DotDict(d)
 
 
 class BaseBulker(object):
@@ -544,7 +559,10 @@ class ES(object):
                 body = body.as_dict()
 
             if isinstance(body, dict):
-                body = json.dumps(body, cls=self.encoder)
+                if cjson is not None:
+                    body = cjson.encode(body)
+                else:
+                    body = json.dumps(body, cls=self.encoder)
         else:
             body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
@@ -562,10 +580,16 @@ class ES(object):
 
         # handle the response
         try:
-            decoded = json.loads(response.body, cls=self.decoder)
+            if cjson is not None:
+                decoded = cjson.decode(response.body)
+            else:
+                decoded = json.loads(response.body, cls=self.decoder)
         except ValueError:
             try:
-                decoded = json.loads(response.body, cls=ESJsonDecoder)
+                if cjson is not None:
+                    decoded = cjson.decode(response.body)
+                else:
+                    decoded = json.loads(response.body, cls=ESJsonDecoder)
             except ValueError:
                 # The only known place where we get back a body which can't be
                 # parsed as JSON is when no handler is found for a request URI.
@@ -1153,8 +1177,14 @@ class ES(object):
                 cmd[op_type]['_id'] = id
 
             if isinstance(doc, dict):
-                doc = json.dumps(doc, cls=self.encoder)
-            command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), doc)
+                if cjson is not None:
+                    doc = cjson.encode(doc)
+                else:
+                    doc = json.dumps(doc, cls=self.encoder)
+            if cjson is not None:
+                command = "%s\n%s" % (cjson.encode(cmd), doc)
+            else:
+                command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), doc)
             self.bulker.add(command)
             return self.flush_bulk()
 
@@ -1278,7 +1308,10 @@ class ES(object):
         if bulk:
             cmd = {"delete": {"_index": index, "_type": doc_type,
                               "_id": id}}
-            self.bulker.add(json.dumps(cmd, cls=self.encoder))
+            if cjson is not None:
+                self.bulker.add(cjson.encode(cmd))
+            else:
+                self.bulker.add(json.dumps(cmd, cls=self.encoder))
             return self.flush_bulk()
 
         path = self._make_path([index, doc_type, id])
@@ -1300,7 +1333,10 @@ class ES(object):
             body = query.to_query_json()
         elif isinstance(query, dict):
             # A direct set of search parameters.
-            body = json.dumps(query, cls=ES.encoder)
+            if cjson is not None:
+                body = cjson.encode(query)
+            else:
+                body = json.dumps(query, cls=ES.encoder)
         else:
             raise InvalidQuery("delete_by_query() must be supplied with a Query object, or a dict")
 
@@ -1413,7 +1449,10 @@ class ES(object):
             body = query.to_search_json()
         elif isinstance(query, dict):
             # A direct set of search parameters.
-            body = json.dumps(query, cls=self.encoder)
+            if cjson is not None:
+                body = cjson.encode(query)
+            else:
+                body = json.dumps(query, cls=self.encoder)
         else:
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
 
