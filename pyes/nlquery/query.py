@@ -1,4 +1,5 @@
 import re
+import time
 from datetime import datetime
 
 from pyes.query import *
@@ -18,7 +19,10 @@ CALENDAR = Calendar()
 
 def parseDate(value):
     tpl = CALENDAR.parse(value)[0]
-    return datetime(*tpl[:7]).isoformat()
+    tpl = time.gmtime(time.mktime(tpl))
+    result = datetime(*tpl[:7]).isoformat()
+    print "%s became %s" % (value, result)
+    return result
 
 
 def floatOrTimestamp(value):
