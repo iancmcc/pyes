@@ -54,8 +54,8 @@ expression << operatorPrecedence(term,
     [
     (required_modifier | prohibit_modifier, 1, opAssoc.RIGHT),
     ((not_ | '!')("not_").setParseAction(lambda:"NOT"), 1, opAssoc.RIGHT),
-    ((and_ | '&&')("and_").setParseAction(lambda:"AND"), 2, opAssoc.LEFT),
-    (Optional(or_ | '||')("or_").setParseAction(lambda:"OR"), 2, opAssoc.LEFT),
+    (Optional(and_ | '&&')("and_").setParseAction(lambda:"AND"), 2, opAssoc.LEFT),
+    ((or_ | '||')("or_").setParseAction(lambda:"OR"), 2, opAssoc.LEFT),
     ])
 
 LuceneParser = expression
