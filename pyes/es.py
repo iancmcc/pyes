@@ -1455,6 +1455,7 @@ class ES(object):
                 body = json.dumps(query, cls=self.encoder)
         else:
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+        logger.info("Query: " + body)
 
         return self._query_call("_search", body, indices, doc_types, **query_params)
 
