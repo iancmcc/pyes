@@ -42,7 +42,7 @@ class ClientTransport(object):
             url=self.server_uri + request.uri,
             params=request.parameters,
             data=request.body,
-            headers=request.headers,
+            headers=headers,
             timeout=self.timeout)
         return RestResponse(status=response.status_code,
                             body=response.content,
