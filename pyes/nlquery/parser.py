@@ -24,7 +24,7 @@ expression = Forward()
 
 valid_word = Regex(r'([a-zA-Z0-9*_+/.\?-]|\\[!(){}\[\]^"~*?\\:])+').setName("word")
 valid_word.setParseAction(
-    lambda t : t[0].replace('\\\\',chr(127)).replace('\\','').replace(chr(127),'\\').lower()
+    lambda t : t[0].replace('\\\\',chr(127)).replace('\\','').replace(chr(127),'\\')
 )
 
 string = QuotedString('"')
