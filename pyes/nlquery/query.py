@@ -79,7 +79,14 @@ def _build_query(parsed, firstrun=True):
         # Already taken care of by bool query
         filter_ = NotFilter(_build_query(parsed[1], False))
     elif 'query' in parsed:
-        if WILDCARD.match(parsed.query):
+        if parsed.field == '_ids':
+            values = parsed.query.split(',')
+            print values
+            filter_ = IdsFilter(values)
+        elif 'is_contains' in parsed:
+            values = parsed.query.split(',')
+            filter_ = TermsFilter(parsed.field or '_all', values)
+        elif WILDCARD.match(parsed.query):
             boost = parsed.boost or 1.0
             if (parsed.query.count('*')==1 and '?' not in parsed.query and
                 parsed.query.endswith('*')):

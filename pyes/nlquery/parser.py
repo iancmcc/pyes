@@ -22,7 +22,7 @@ keyword = and_ | or_ | not_
 
 expression = Forward()
 
-valid_word = Regex(r'([a-zA-Z0-9*_+/.\?-]|\\[!(){}\[\]^"~*?\\:])+').setName("word")
+valid_word = Regex(r'([a-zA-Z0-9*_+/.,\?-]|\\[!(){}\[\]^"~*?\\:])+').setName("word")
 valid_word.setParseAction(
     lambda t : t[0].replace('\\\\',chr(127)).replace('\\','').replace(chr(127),'\\').lower()
 )
@@ -46,7 +46,7 @@ boost = (CARAT + number("boost"))
 
 string_expr = Group(string + proximity_modifier) | string
 word_expr = (Group(valid_word + fuzzy_modifier) | valid_word)
-term << (Optional(field_name("field") + COLON) + 
+term << (Optional(field_name("field") + COLON + Optional(COLON("is_contains"))) + 
          (word_expr("query") | string_expr("phrase") | range_search("range") | Group(LPAR + expression + RPAR)("subquery")) + Optional(boost))
 term.setParseAction(lambda t:[t] if 'field' in t or 'query' in t or 'boost' in t else t)
     
