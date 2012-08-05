@@ -90,13 +90,14 @@ def _build_query(parsed, firstrun=True):
             boost = parsed.boost or 1.0
             if (parsed.query.count('*')==1 and '?' not in parsed.query and
                 parsed.query.endswith('*')):
-                filter_ = PrefixFilter(parsed.field or '_all',
-                                       parsed.query[:-1], boost=boost)
+                filter_ = QueryFilter(TextQuery(parsed.field or '_all',
+                                       parsed.query[:-1], 'phrase_prefix'))
             else:
                 filter_ = QueryFilter(WildcardQuery(parsed.field or '_all',
                                                     parsed.query, boost=boost))
         else:
-            filter_ = TermFilter(parsed.field or '_all', parsed.query)
+            filter_ = QueryFilter(TextQuery(parsed.field or '_all', parsed.query))
+            #filter_ = TermFilter(parsed.field or '_all', parsed.query)
     elif 'phrase' in parsed:
         filter_ = QueryFilter(TextQuery(parsed.field or '_all', parsed.phrase, 'phrase'))
     elif 'range' in parsed:
