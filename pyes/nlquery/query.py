@@ -18,7 +18,10 @@ CALENDAR = Calendar()
 
 
 def parseDate(value):
-    tpl = CALENDAR.parse(value)[0]
+    tpl, flags = CALENDAR.parse(value)
+    if flags == 0:
+        # Didn't parse as a date. Just return the orig value
+        return None if value == '*' else value
     tpl = time.gmtime(time.mktime(tpl))
     result = datetime(*tpl[:7]).isoformat()
     print "%s became %s" % (value, result)
