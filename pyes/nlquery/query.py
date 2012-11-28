@@ -84,7 +84,6 @@ def _build_query(parsed, firstrun=True):
     elif 'query' in parsed:
         if parsed.field == '_ids':
             values = parsed.query.split(',')
-            print values
             filter_ = IdsFilter(values)
         elif 'is_contains' in parsed:
             values = parsed.query.split(',')
@@ -113,7 +112,7 @@ def _build_query(parsed, firstrun=True):
             bool(range_.incl_upper)
         ))
     elif 'subquery' in parsed:
-        filter_ = _build_filter(parsed.subquery, False)
+        filter_ = _build_query(parsed.subquery, False)
 
     if firstrun:
         return FilteredQuery(MatchAllQuery(), filter_)
