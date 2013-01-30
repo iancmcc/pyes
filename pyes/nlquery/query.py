@@ -18,6 +18,7 @@ CALENDAR = Calendar()
 
 
 def parseDate(value):
+    return value
     tpl, flags = CALENDAR.parse(value)
     if flags == 0:
         # Didn't parse as a date. Just return the orig value
